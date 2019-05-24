@@ -1,0 +1,33 @@
+version: '3'
+services:
+  # Apostrophe CMS
+  apostrophe:
+    build:
+      context: .
+    ports:
+      - 3000:3000
+    volumes:
+      - ./:/app
+      - aposdata:/app/dist/data
+      - aposuploads:/app/dist/public/uploads
+    depends_on:
+      - mongodb
+    environment:
+      NODE_ENV: development
+      ADDRESS: 0.0.0.0
+      PORT: 3000
+      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_DB: apos-vue-ts
+    command: tail -f /dev/null
+  # MongoDB
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - mongodata:/data/db
+    ports:
+      - 27017:27017
+
+volumes:
+  mongodata:
+  aposdata:
+  aposuploads:

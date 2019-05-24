@@ -1,0 +1,8 @@
+/.cache
+/.git
+/data
+/public
+/dist
+Dockerfile
+.dockerignore
+.gitignore
