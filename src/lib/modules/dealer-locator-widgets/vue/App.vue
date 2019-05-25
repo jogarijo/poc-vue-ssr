@@ -1,8 +1,9 @@
 <template>
-  <div>
+  <div id="app">
+    <button @click="counter += 1">Refresh {{ counter }}</button>
     <ul>
       <li v-for="dealer of dealers" :key="dealer.id">
-        {{ dealer.name }}
+        {{ dealer.title }}
       </li>
     </ul>
   </div>
@@ -10,19 +11,26 @@
 
 <script>
 export default {
+  data () {
+    return {
+      counter: 1
+    }
+  },
+
   computed: {
     dealers () {
       return this.$store.state.dealers || []
     }
   },
 
-  serverPrefetch () {
-    const { req, manager } = this.$ssrContext
+  async serverPrefetch () {
+    const { req, dealersManager } = this.$ssrContext
     const location = req.query.location || ''
     const page = req.query.page || 1
     const perPage = req.query.perPage || 10
 
-    return this.fetchDealers({ location, page, perPage })
+    const dealers = await dealersManager.getAll(req, { location, page, perPage })
+    this.$store.commit('setDealers', dealers)
   },
 
   mounted () {
@@ -33,7 +41,7 @@ export default {
   },
 
   methods: {
-    fetchDealers ({ location, page, perPage }) {
+    fetchDealers ({ location, page, perPage } = {}) {
       return this.$store.dispatch('fetchDealers', { location, page, perPage })
     }
   }

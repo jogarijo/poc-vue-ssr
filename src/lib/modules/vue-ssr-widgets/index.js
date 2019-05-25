@@ -1,8 +1,10 @@
 const { createRenderer } = require('vue-server-renderer')
 const { promisify } = require('util')
 const { join } = require('path')
-const Vue = require('vue')
+const Vue = require('vue/dist/vue')
 const Vuex = require('vuex')
+const { createApp } = require('./universal/app')
+const { createStore } = require('./universal/store')
 
 Vue.use(Vuex)
 
@@ -18,12 +20,7 @@ module.exports = {
   // The name of the root component for the app, if different from 'App'.
   rootComponent: 'App',
 
-  // TODO
-  defaultState: {},
-  actions: {},
-  mutations: {},
-
-  construct (self, options) {
+  construct(self, options) {
     self.renderer = createRenderer(options.rendererOptions)
 
     // Retrieve 'vue' folder full path from the last module in the extension
@@ -31,6 +28,7 @@ module.exports = {
     // to the right folder, instead of this base module's.
     const moduleMetadata = self.__meta.chain[self.__meta.chain.length - 1]
     self.vueRoot = join(moduleMetadata.dirname, 'vue')
+    self.universalRoot = join(moduleMetadata.dirname, 'universal')
 
     /**
      * Triggers server-side rendering on all widgets of the page. All widgets
@@ -65,17 +63,19 @@ module.exports = {
      * allowing direct access to the module methods within the Vue app. It may
      * be a little overkill though, to be discussed. - @jogarijo
      */
-    self.getContext = async (req) => {
+    self.getContext = (req) => {
       return { req, manager: self }
     }
 
     /**
-     * TODO
+     * TODO Is it pertinent? Should we attempt to automatically fetch files from
+     * a specific location (e.g. ./lib/mutations.js), like Apostrophe does with
+     * cursors?
      */
-    self.getStore = (req) => new Vuex.Store({
-      state: () => options.defaultState,
-      actions: options.actions,
-      mutations: options.mutations
+    self.getStore = (req) => ({
+      state: () => ({}),
+      actions: {},
+      mutations: {}
     })
 
     /**
@@ -83,15 +83,25 @@ module.exports = {
      * object, thus exposing it as `data.widget._rendered` from the template.
      */
     self.renderWidget = async (req, widget) => {
+      // req.browserCall('alert("tamer")')
       try {
         const { default: rootComponent } = require(join(self.vueRoot, options.rootComponent))
-        const app = new Vue({
-          store: self.getStore(),
-          render: h => h(rootComponent)
-        })
-        const context = await self.getContext(req)
 
+        // TODO Check exists
+        const state = require(join(self.universalRoot, 'state'))
+        const actions = require(join(self.universalRoot, 'actions'))
+        const mutations = require(join(self.universalRoot, 'mutations'))
+
+        // TODO Check if store required for this component
+        const store = createStore({ state, actions, mutations })
+        // TODO Maybe include router?
+        const app = createApp({ name: self.__meta.name, store, component: rootComponent })
+
+        const context = self.getContext(req)
         widget._rendered = await self.renderer.renderToString(app, context)
+
+        // FIXME Dirty way to pass down the state to the always.js
+        widget._state = JSON.stringify(store.state)
       } catch (err) {
         console.error(`An error occurred during SSR for ${self.__meta.name}`)
         console.error(err)
