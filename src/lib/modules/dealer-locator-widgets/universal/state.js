@@ -1,4 +1,4 @@
-module.exports = function state() {
+export function state() {
   return {
     dealers: []
   }

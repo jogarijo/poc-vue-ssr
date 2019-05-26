@@ -14,7 +14,7 @@ module.exports = {
     {
       name: 'details',
       label: 'Details',
-      fields: ['title', 'slug', 'location'],
+      fields: ['title', 'slug', 'location']
     },
     {
       name: 'seo',
@@ -23,23 +23,26 @@ module.exports = {
     }
   ],
 
-  afterConstruct (self) {
+  afterConstruct(self) {
     self.apos.app.use('/api/v1/dealers', (req, res) => {
       self.getAll(req, req.query).then((dealers) => res.send(dealers))
     })
   },
 
-  construct (self, options) {
-    self.getAll = (req, { location, page, perPage }) => {
+  construct(self, options) {
+    self.getAll = (req, { search, page, perPage }) => {
       const criteria = {}
-      if (location && typeof location === 'string') {
-        const searchRegexp = location
-          .replace(/[^\u0000-\u007F]/g, ' ')
-          .split(' ')
-          .filter(p => p)
-          .map(p => `(?=.*${p})`)
-          .join('')
-        criteria.location = new RegExp(searchRegexp, 'i')
+      if (search && typeof search === 'string') {
+        const regexp = new RegExp(
+          search
+            .replace(/[^\u0000-\u007F]/g, ' ')
+            .split(' ')
+            .filter((p) => p)
+            .map((p) => `(?=.*${p})`)
+            .join(''),
+          'i'
+        )
+        criteria.$or = [{ title: regexp }, { location: regexp }]
       }
 
       let cursor = self.find(req, criteria)

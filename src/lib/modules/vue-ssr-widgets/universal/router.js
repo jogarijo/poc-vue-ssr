@@ -1,5 +1,8 @@
-const VueRouter = require('vue-router')
+import VueRouter from 'vue-router'
 
-const createRouter = () => new VueRouter({})
+const createRouter = ({ mode = 'history', routes = [] }) => new VueRouter({
+  mode,
+  routes
+})
 
-module.exports = { createRouter }
+export { createRouter }

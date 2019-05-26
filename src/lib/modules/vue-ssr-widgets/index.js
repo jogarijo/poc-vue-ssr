@@ -5,6 +5,7 @@ const Vue = require('vue/dist/vue')
 const Vuex = require('vuex')
 const { createApp } = require('./universal/app')
 const { createStore } = require('./universal/store')
+const { createRouter } = require('./universal/router')
 
 Vue.use(Vuex)
 
@@ -68,22 +69,10 @@ module.exports = {
     }
 
     /**
-     * TODO Is it pertinent? Should we attempt to automatically fetch files from
-     * a specific location (e.g. ./lib/mutations.js), like Apostrophe does with
-     * cursors?
-     */
-    self.getStore = (req) => ({
-      state: () => ({}),
-      actions: {},
-      mutations: {}
-    })
-
-    /**
      * Renders the Vue application and appends the rendered HTML to the widget
      * object, thus exposing it as `data.widget._rendered` from the template.
      */
     self.renderWidget = async (req, widget) => {
-      // req.browserCall('alert("tamer")')
       try {
         const { default: rootComponent } = require(join(self.vueRoot, options.rootComponent))
 
@@ -92,10 +81,15 @@ module.exports = {
         const actions = require(join(self.universalRoot, 'actions'))
         const mutations = require(join(self.universalRoot, 'mutations'))
 
-        // TODO Check if store required for this component
+        // TODO Check if store and/or router are required for this component
         const store = createStore({ state, actions, mutations })
-        // TODO Maybe include router?
-        const app = createApp({ name: self.__meta.name, store, component: rootComponent })
+        const router = createRouter({ routes: [] }) // TODO
+        const app = createApp({
+          name: self.__meta.name,
+          store,
+          router,
+          component: rootComponent
+        })
 
         const context = self.getContext(req)
         widget._rendered = await self.renderer.renderToString(app, context)

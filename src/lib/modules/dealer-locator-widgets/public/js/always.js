@@ -13,9 +13,15 @@ apos.define('dealer-locator-widgets', {
   construct(self, options) {
     apos.vueSsr.mountApp(self, {
       component: App,
-      state,
-      mutations,
-      actions
+      store: {
+        state,
+        mutations,
+        actions
+      },
+      router: {
+        mode: 'history',
+        routes: []
+      }
     })
   }
 })
